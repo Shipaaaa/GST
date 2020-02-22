@@ -8,7 +8,7 @@
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
  * 
- * Запуск: crun ./generator 5 input_data && crun ./laba1 input_data result
+ * Запуск: crun ./generator 5 input_data && crun ./sequential_execution input_data result
  */
 
 #include <stdio.h>
