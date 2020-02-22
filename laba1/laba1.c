@@ -123,16 +123,16 @@ int main(int argc, char *argv[], char *argp[]) {
     if (DEBUG) printf("\n");
     #pragma endregion
 
-    fprintf(output_file, "time: %f.2\n", time_spent_in_sec);
-    if (LOG) printf("time_spent_in_sec: %f.2\n", time_spent_in_sec);
+    fprintf(output_file, "time: %f\n", time_spent_in_sec);
+    if (LOG) printf("time_spent_in_sec: %f\n", time_spent_in_sec);
 
     int size_of_input_data = (matrix_size * matrix_size + matrix_size) * sizeof(int);
     double size_of_input_data_in_mb = (double)size_of_input_data / 1024 / 1024;
-    fprintf(output_file, "size: %f.2\n", size_of_input_data_in_mb);
+    fprintf(output_file, "size: %f\n", size_of_input_data_in_mb);
     if (LOG) {
         printf("matrix_size: %d\n", matrix_size);
         printf("size_of_input_data: %d\n", size_of_input_data);
-        printf("size_of_input_data_in_mb: %f.2\n\n", size_of_input_data_in_mb);
+        printf("size_of_input_data_in_mb: %f\n\n", size_of_input_data_in_mb);
     }
 
     fclose(input_file);
