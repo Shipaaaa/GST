@@ -7,7 +7,7 @@
  * Программа выполняет бизнес-логику и записывает результат в выходной файл.
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
- * 
+ *
  * Запуск: crun ./generator 5 input_data && crun ./sequential_execution input_data result
  */
 
@@ -56,12 +56,14 @@ int main(int argc, char *argv[], char *argp[]) {
     fscanf(input_file, "%d", &matrix_size);
     if (LOG) printf("matrix_size: %d \n", matrix_size);
     // endregion
-    
-    int matrix[matrix_size][matrix_size];
-    #pragma region [rgba(155, 89, 182, 0.15)]
+
+    int **matrix = (int **)calloc(matrix_size, sizeof(int *));
+    for (int i = 0; i < matrix_size; i++) matrix[i] = (int *)calloc(matrix_size, sizeof(int));
+
+#pragma region[rgba(155, 89, 182, 0.15)]
     // read_matrix
     memset(matrix, 0, matrix_size * matrix_size * sizeof(int));
-    
+
     for (int i = 0; i < matrix_size; i++) {
         for (int j = 0; j < matrix_size; j++) {
             fscanf(input_file, "%d", &matrix[i][j]);
@@ -69,12 +71,12 @@ int main(int argc, char *argv[], char *argp[]) {
         }
         if (DEBUG) printf("\n");
     }
-    #pragma endregion
+#pragma endregion
 
     int vector_length = matrix_size;
 
-    int vector[vector_length];
-    #pragma region [rgba(155, 89, 182, 0.15)]
+    int *vector = (int *)calloc(vector_length, sizeof(int));
+#pragma region[rgba(155, 89, 182, 0.15)]
     // read_matrix
     memset(vector, 0, vector_length * sizeof(int));
 
@@ -83,13 +85,13 @@ int main(int argc, char *argv[], char *argp[]) {
     }
 
     if (DEBUG) print_vector(vector_length, vector);
-    #pragma endregion
+#pragma endregion
 
     /* ЗАПУСК СЕКУНДАМЕРА */
     clock_t begin = clock();
 
-    int answer[vector_length];
-    #pragma region [rgba(155, 89, 182, 0.15)]
+    int *answer = (int *)calloc(vector_length, sizeof(int));
+#pragma region[rgba(155, 89, 182, 0.15)]
     // calc_answer
     memset(answer, 0, vector_length * sizeof(int));
 
@@ -98,7 +100,7 @@ int main(int argc, char *argv[], char *argp[]) {
             answer[j] += matrix[j][i] * vector[i];
         }
     }
-    #pragma endregion
+#pragma endregion
 
     /* ОСТАНОВКА СЕКУНДАМЕРА */
     clock_t end = clock();
@@ -112,7 +114,7 @@ int main(int argc, char *argv[], char *argp[]) {
         return -1;
     }
 
-    #pragma region [rgba(155, 89, 182, 0.15)]
+#pragma region[rgba(155, 89, 182, 0.15)]
     // save_answer
     fprintf(output_file, "result:\n");
     for (int i = 0; i < vector_length; i++) {
@@ -121,7 +123,7 @@ int main(int argc, char *argv[], char *argp[]) {
     }
     fprintf(output_file, "\n");
     if (DEBUG) printf("\n");
-    #pragma endregion
+#pragma endregion
 
     fprintf(output_file, "time: %f\n", time_spent_in_sec);
     if (LOG) printf("time_spent_in_sec: %f\n", time_spent_in_sec);
@@ -138,6 +140,11 @@ int main(int argc, char *argv[], char *argp[]) {
     fclose(input_file);
     fclose(output_file);
 
+    for (int i = 0; i < matrix_size; i++) free(matrix[i]);
+    free(matrix);
+    free(vector);
+    free(answer);
+    
     return 0;
 }
 
