@@ -27,7 +27,7 @@ void showMessage(char *message);
 
 void showError(char *errorMessage);
 
-void print_vector(int vector_length, const int *vector);
+void print_vector(long vector_length, const int *vector);
 
 int main(int argc, char *argv[], char *argp[]) {
     char *input_file_name;
@@ -51,21 +51,19 @@ int main(int argc, char *argv[], char *argp[]) {
         return -1;
     }
 
-    int matrix_size;
+    long matrix_size;
     // region get_matrix_size
-    fscanf(input_file, "%d", &matrix_size);
-    if (LOG) printf("matrix_size: %d \n", matrix_size);
+    fscanf(input_file, "%ld", &matrix_size);
+    if (LOG) printf("matrix_size: %ld \n", matrix_size);
     // endregion
 
-    int **matrix = (int **)calloc(matrix_size, sizeof(int *));
-    for (int i = 0; i < matrix_size; i++) matrix[i] = (int *)calloc(matrix_size, sizeof(int));
+    int **matrix = (int **) calloc(matrix_size, sizeof(int *));
+    for (long i = 0; i < matrix_size; i++) matrix[i] = (int *) calloc(matrix_size, sizeof(int));
 
 #pragma region[rgba(155, 89, 182, 0.15)]
     // read_matrix
-    memset(matrix, 0, matrix_size * matrix_size * sizeof(int));
-
-    for (int i = 0; i < matrix_size; i++) {
-        for (int j = 0; j < matrix_size; j++) {
+    for (long i = 0; i < matrix_size; i++) {
+        for (long j = 0; j < matrix_size; j++) {
             fscanf(input_file, "%d", &matrix[i][j]);
             if (DEBUG) printf("%d ", matrix[i][j]);
         }
@@ -73,38 +71,34 @@ int main(int argc, char *argv[], char *argp[]) {
     }
 #pragma endregion
 
-    int vector_length = matrix_size;
+    long vector_length = matrix_size;
 
-    int *vector = (int *)calloc(vector_length, sizeof(int));
+    int *vector = (int *) calloc(vector_length, sizeof(int));
 #pragma region[rgba(155, 89, 182, 0.15)]
     // read_matrix
-    memset(vector, 0, vector_length * sizeof(int));
-
-    for (int i = 0; i < vector_length; i++) {
+    for (long i = 0; i < vector_length; i++) {
         fscanf(input_file, "%d", &vector[i]);
     }
 
     if (DEBUG) print_vector(vector_length, vector);
 #pragma endregion
 
+    int *answer = (int *) calloc(vector_length, sizeof(int));
+
     /* ЗАПУСК СЕКУНДАМЕРА */
     clock_t begin = clock();
-
-    int *answer = (int *)calloc(vector_length, sizeof(int));
 #pragma region[rgba(155, 89, 182, 0.15)]
     // calc_answer
-    memset(answer, 0, vector_length * sizeof(int));
 
-    for (int i = 0; i < vector_length; i++) {
-        for (int j = 0; j < vector_length; j++) {
+    for (long i = 0; i < vector_length; i++) {
+        for (long j = 0; j < vector_length; j++) {
             answer[j] += matrix[j][i] * vector[i];
         }
     }
 #pragma endregion
-
     /* ОСТАНОВКА СЕКУНДАМЕРА */
     clock_t end = clock();
-    double time_spent_in_sec = (double)(end - begin) / CLOCKS_PER_SEC;
+    double time_spent_in_sec = (double) (end - begin) / CLOCKS_PER_SEC;
 
     FILE *output_file = NULL;
     output_file = fopen(output_file_name, "w+");
@@ -117,7 +111,7 @@ int main(int argc, char *argv[], char *argp[]) {
 #pragma region[rgba(155, 89, 182, 0.15)]
     // save_answer
     fprintf(output_file, "result:\n");
-    for (int i = 0; i < vector_length; i++) {
+    for (long i = 0; i < vector_length; i++) {
         fprintf(output_file, "%d ", answer[i]);
         if (DEBUG) printf("%d ", answer[i]);
     }
@@ -128,12 +122,12 @@ int main(int argc, char *argv[], char *argp[]) {
     fprintf(output_file, "time: %f\n", time_spent_in_sec);
     if (LOG) printf("time_spent_in_sec: %f\n", time_spent_in_sec);
 
-    int size_of_input_data = (matrix_size * matrix_size + matrix_size) * sizeof(int);
-    double size_of_input_data_in_mb = (double)size_of_input_data / 1024 / 1024;
+    long size_of_input_data = (long) ((matrix_size * matrix_size + matrix_size) * sizeof(int));
+    double size_of_input_data_in_mb = (double) size_of_input_data / 1024 / 1024;
     fprintf(output_file, "size: %f\n", size_of_input_data_in_mb);
     if (LOG) {
-        printf("matrix_size: %d\n", matrix_size);
-        printf("size_of_input_data: %d\n", size_of_input_data);
+        printf("matrix_size: %ld\n", matrix_size);
+        printf("size_of_input_data: %ld\n", size_of_input_data);
         printf("size_of_input_data_in_mb: %f\n\n", size_of_input_data_in_mb);
     }
 
@@ -144,12 +138,12 @@ int main(int argc, char *argv[], char *argp[]) {
     free(matrix);
     free(vector);
     free(answer);
-    
+
     return 0;
 }
 
-void print_vector(int vector_length, const int *vector) {
-    for (int i = 0; i < vector_length; i++) {
+void print_vector(long vector_length, const int *vector) {
+    for (long i = 0; i < vector_length; i++) {
         printf("%d ", vector[i]);
     }
     printf("\n");
