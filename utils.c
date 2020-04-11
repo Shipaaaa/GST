@@ -8,7 +8,7 @@ void showMessage(char *message) {
     printf("%s", message);
 }
 
-void showError(char *errorMessage) {
+void showError(const char *errorMessage) {
     change_printf_to_error();
     printf("%s\n", errorMessage);
     change_printf_to_log();

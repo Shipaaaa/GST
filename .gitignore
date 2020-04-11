@@ -174,3 +174,7 @@ dkms.conf
 *.ptx
 *.cubin
 *.fatbin
+
+### Test data
+/test_data/
+/results/

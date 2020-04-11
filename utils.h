@@ -10,7 +10,7 @@
 
 void showMessage(char *message);
 
-void showError(char *errorMessage);
+void showError(const char *errorMessage);
 
 void change_printf_to_error();
 
