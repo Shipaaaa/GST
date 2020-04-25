@@ -8,13 +8,13 @@
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
  *
- * Запуск: crun ./generator 5 input_data && crun ./sequential_execution input_data result
+ * Запуск: gcc sequential_execution.c -o sequential_execution.out && \
+$PWD/sequential_execution.out ./test_data/1mb ./results/sequential_execution/1mb
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "utils.h"
 
 #define DEBUG 0
 #define LOG 1
@@ -42,12 +42,12 @@ int main(int argc, char *argv[], char *argp[]) {
         output_file_name = argv[2];
     }
 
-    if (LOG) printf("input file name: %s, output file name: %s.\n", input_file_name, output_file_name);
+    if (LOG) printf("input file name: %s,\noutput file name: %s.\n\n", input_file_name, output_file_name);
 
     FILE *input_file = NULL;
     input_file = fopen(input_file_name, "r+");
     if (input_file == NULL) {
-        showError("input file not found!");
+        printf("input file not found!");
         return -1;
     }
 
@@ -74,7 +74,7 @@ int main(int argc, char *argv[], char *argp[]) {
     output_file = fopen(output_file_name, "w+");
 
     if (output_file == NULL) {
-        showError("output file not found!");
+        printf("output file not found!");
         return -1;
     }
 
