@@ -8,13 +8,14 @@
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
  *
- * Запуск: g++-9 -fopenmp openmp.c -o openmp.out && \
+ * Запуск: g++-9 -fopenmp openmp.c utils.c -o openmp.out && \
 $PWD/openmp.out ./test_data/1mb ./results/openmp/1mb
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "utils.h"
 #include "/usr/local/Cellar/gcc/9.3.0_1/lib/gcc/9/gcc/x86_64-apple-darwin18/9.3.0/include/omp.h"
 
 #define DEBUG 0
@@ -48,7 +49,7 @@ int main(int argc, char *argv[], char *argp[]) {
     FILE *input_file = NULL;
     input_file = fopen(input_file_name, "r+");
     if (input_file == NULL) {
-        printf("input file not found!");
+        showError("input file not found!");
         return -1;
     }
 
@@ -75,7 +76,7 @@ int main(int argc, char *argv[], char *argp[]) {
     output_file = fopen(output_file_name, "w+");
 
     if (output_file == NULL) {
-        printf("output file not found!");
+        showError("output file not found!");
         return -1;
     }
 
@@ -105,6 +106,7 @@ int main(int argc, char *argv[], char *argp[]) {
 }
 
 void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
+    if (DEBUG) printf("read_matrix:\n");
     for (long i = 0; i < matrix_size; i++) {
         for (long j = 0; j < matrix_size; j++) {
             fscanf(input_file, "%d", &matrix[i][j]);
@@ -112,6 +114,8 @@ void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
         }
         if (DEBUG) printf("\n");
     }
+
+    if (DEBUG) printf("\n");
 }
 
 void read_vector(FILE *input_file, int *vector, long vector_length) {
@@ -123,23 +127,37 @@ void read_vector(FILE *input_file, int *vector, long vector_length) {
 }
 
 void print_vector(const int *vector, long vector_length) {
+    if (DEBUG) printf("read_vector:\n");
     for (long i = 0; i < vector_length; i++) {
         printf("%d ", vector[i]);
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 void calc_answer(int **matrix, const int *vector, int *answer, const long vector_length) {
-    omp_set_num_threads(8);
-#pragma omp parallel for collapse(2) shared(matrix, vector)
-    for (long i = 0; i < vector_length; i++) {
-        for (long j = 0; j < vector_length; j++) {
-            answer[j] += matrix[j][i] * vector[i];
+#pragma omp parallel num_threads(8) shared(matrix, vector)
+    {
+        long i, j;
+        int *answer_private = (int *) calloc(vector_length, sizeof(int));
+
+        for (i = 0; i < vector_length; i++) {
+#pragma omp for
+            for (j = 0; j < vector_length; j++) {
+                answer_private[i] += matrix[j][i] * vector[j];
+            }
         }
+#pragma omp critical
+        {
+            for (i = 0; i < vector_length; i++) {
+                answer[i] += answer_private[i];
+            }
+        }
+        free(answer_private);
     }
 }
 
 void save_answer(FILE *output_file, const int *answer, long answer_length) {
+    if (DEBUG) printf("save_answer:\n");
     fprintf(output_file, "result:\n");
 
     for (long i = 0; i < answer_length; i++) {
@@ -147,6 +165,6 @@ void save_answer(FILE *output_file, const int *answer, long answer_length) {
         if (DEBUG) printf("%d ", answer[i]);
     }
     fprintf(output_file, "\n");
-    if (DEBUG) printf("\n");
+    if (DEBUG) printf("\n\n");
 }
 
