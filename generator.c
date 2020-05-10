@@ -6,6 +6,9 @@
  * Данные генерируются утилитой, принимающей в качестве параметров
  * размер данных для обработки в мегабайтах
  * и имя файла (TCP хост-порт) куда будут выгружены данные.
+ *
+ * Запуск: gcc generator.c utils.c -o generator.out && \
+./generator.out 1 $PWD/1mb
  */
 
 #include <stdio.h>
@@ -27,12 +30,12 @@ int main(int argc, char *argv[], char *argp[]) {
         return -1;
     }
 
-    long size_in_mb = atol(argv[1]);
+    double size_in_mb = atof(argv[1]);
     char *output_file_name = argv[2];
-    if (LOG) printf("size: %ldmb, output file name: %s.\n", size_in_mb, output_file_name);
+    if (LOG) printf("size: %5.2fmb, output file name: %s.\n", size_in_mb, output_file_name);
 
-    long size_in_bytes = size_in_mb * 1024 * 1024;
-    if (LOG) printf("size_in_bytes: %ld\n", size_in_bytes);
+    double size_in_bytes = size_in_mb * 1024 * 1024;
+    if (LOG) printf("size_in_bytes: %5.2f\n", size_in_bytes);
 
     long count_of_elements = (long) (size_in_bytes / sizeof(int));
     if (LOG) printf("count_of_elements: %ld, size_of_int: %ld\n", count_of_elements, sizeof(int));
