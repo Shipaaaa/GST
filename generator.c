@@ -8,7 +8,7 @@
  * и имя файла (TCP хост-порт) куда будут выгружены данные.
  *
  * Запуск: gcc generator.c utils.c -o generator.out && \
-./generator.out 1 $PWD/1mb
+$PWD/generator.out 1 ./test_data/1mb
  */
 
 #include <stdio.h>
