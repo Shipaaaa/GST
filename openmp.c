@@ -167,4 +167,3 @@ void save_answer(FILE *output_file, const int *answer, long answer_length) {
     fprintf(output_file, "\n");
     if (DEBUG) printf("\n\n");
 }
-
