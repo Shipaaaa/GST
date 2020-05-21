@@ -8,8 +8,8 @@
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
  *
- * Запуск: gcc sequential_execution.c utils.c -o sequential_execution.out && \
-$PWD/sequential_execution.out ./test_data/1mb ./results/sequential_execution/1mb
+ * Запуск: gcc sequential_execution_cp.c utils.c -o sequential_execution_cp.out && \
+$PWD/sequential_execution_cp.out ./test_data/1mb ./results/sequential_execution_cp/1mb
  */
 
 #include <stdio.h>
@@ -20,13 +20,13 @@ $PWD/sequential_execution.out ./test_data/1mb ./results/sequential_execution/1mb
 #define DEBUG 0
 #define LOG 1
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size);
+void read_matrix(FILE *input_file, int *matrix, long matrix_size);
 
 void read_vector(FILE *input_file, int *vector, long vector_length);
 
 void print_vector(const int *vector, long vector_length);
 
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length);
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length);
 
 void save_answer(FILE *output_file, const int *answer, long answer_length);
 
@@ -56,8 +56,7 @@ int main(int argc, char *argv[], char *argp[]) {
     fscanf(input_file, "%ld", &matrix_size);
     if (LOG) printf("matrix_size: %ld \n", matrix_size);
 
-    int **matrix = (int **) calloc(matrix_size, sizeof(int *));
-    for (long i = 0; i < matrix_size; i++) matrix[i] = (int *) calloc(matrix_size, sizeof(int));
+    int *matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int *));
     read_matrix(input_file, matrix, matrix_size);
 
     long vector_length = matrix_size;
@@ -96,7 +95,6 @@ int main(int argc, char *argv[], char *argp[]) {
     fclose(input_file);
     fclose(output_file);
 
-    for (int i = 0; i < matrix_size; i++) free(matrix[i]);
     free(matrix);
     free(vector);
     free(answer);
@@ -104,12 +102,12 @@ int main(int argc, char *argv[], char *argp[]) {
     return 0;
 }
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
+void read_matrix(FILE *input_file, int *matrix, long matrix_size) {
     if (DEBUG) printf("read_matrix:\n");
     for (long i = 0; i < matrix_size; i++) {
         for (long j = 0; j < matrix_size; j++) {
-            fscanf(input_file, "%d", &matrix[i][j]);
-            if (DEBUG) printf("%d ", matrix[i][j]);
+            fscanf(input_file, "%d", &matrix[i * matrix_size + j]);
+            if (DEBUG) printf("%d ", matrix[i * matrix_size + j]);
         }
         if (DEBUG) printf("\n");
     }
@@ -133,10 +131,10 @@ void print_vector(const int *vector, long vector_length) {
     printf("\n\n");
 }
 
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length) {
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length) {
     for (long i = 0; i < vector_length; i++) {
         for (long j = 0; j < vector_length; j++) {
-            answer[i] += matrix[j][i] * vector[j];
+            answer[i] += matrix[j * vector_length + i] * vector[j];
         }
     }
 }
