@@ -22,13 +22,11 @@ mpirun $PWD/openmpi.out ./test_data/1mb ./results/openmpi/1mb --use-hwthreads-as
 
 #define MASTER_PROC 0
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size);
+void read_matrix(FILE *input_file, int *matrix, long matrix_size);
 
 void read_vector(FILE *input_file, int *vector, long vector_length);
 
 void print_vector(const int *vector, long vector_length);
-
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length);
 
 void save_answer(FILE *output_file, const int *answer, long answer_length);
 
@@ -40,7 +38,7 @@ int main(int argc, char *argv[], char *argp[]) {
     double begin, end;
     int matrix_part_size;
 
-    int **matrix = NULL;
+    int *matrix = NULL;
     int *vector = NULL;
     int *answer = NULL;
 
@@ -90,13 +88,12 @@ int main(int argc, char *argv[], char *argp[]) {
     MPI_Bcast(&vector_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&matrix_part_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    matrix = (int **) calloc(matrix_size, sizeof(int *));
-    for (long i = 0; i < matrix_size; i++) matrix[i] = (int *) calloc(matrix_size, sizeof(int));
+    matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int *));
     vector = (int *) calloc(vector_length, sizeof(int));
     answer = (int *) calloc(vector_length, sizeof(int));
 
-    int *matrix_buffer = (int *) calloc(matrix_part_size, sizeof(int));
-    int *answer_buffer = (int *) calloc(matrix_part_size, sizeof(int));
+    int *matrix_buffer = (int *) calloc(matrix_size * matrix_size, sizeof(int));
+    int *answer_buffer = (int *) calloc(vector_length, sizeof(int));
 
     if (current_proc == MASTER_PROC) {
         read_matrix(input_file, matrix, matrix_size);
@@ -104,10 +101,11 @@ int main(int argc, char *argv[], char *argp[]) {
         fclose(input_file);
     }
 
-    MPI_Scatter(matrix, matrix_part_size, MPI_INT,
-                matrix_buffer, matrix_part_size, MPI_INT,
-                0, MPI_COMM_WORLD);
-
+    MPI_Scatter(
+            matrix, matrix_part_size, MPI_INT,
+            matrix_buffer, matrix_part_size, MPI_INT,
+            0, MPI_COMM_WORLD
+    );
     MPI_Bcast(vector, (int) vector_length, MPI_INT, 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -119,7 +117,7 @@ int main(int argc, char *argv[], char *argp[]) {
     int sum = 0;
     for (long i = 0; i < vector_length; i++) {
         for (long j = 0; j < vector_length; j++) {
-            sum += matrix_buffer[j] * vector[j];
+            sum += matrix[j * vector_length + i] * vector[j];
         }
         answer_buffer[i] = sum;
         sum = 0;
@@ -129,9 +127,11 @@ int main(int argc, char *argv[], char *argp[]) {
         end = MPI_Wtime();
     }
 
-    MPI_Gather(answer_buffer, matrix_part_size, MPI_INT,
-               answer, matrix_part_size, MPI_INT,
-               0, MPI_COMM_WORLD);
+    MPI_Gather(
+            answer_buffer, matrix_part_size, MPI_INT,
+            answer, matrix_part_size, MPI_INT,
+            0, MPI_COMM_WORLD
+    );
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -164,7 +164,6 @@ int main(int argc, char *argv[], char *argp[]) {
         fclose(output_file);
     }
 
-    for (int i = 0; i < matrix_size; i++) free(matrix[i]);
     free(matrix);
     free(vector);
     free(answer);
@@ -174,12 +173,12 @@ int main(int argc, char *argv[], char *argp[]) {
     return 0;
 }
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
+void read_matrix(FILE *input_file, int *matrix, long matrix_size) {
     if (DEBUG) printf("read_matrix:\n");
     for (long i = 0; i < matrix_size; i++) {
         for (long j = 0; j < matrix_size; j++) {
-            fscanf(input_file, "%d", &matrix[i][j]);
-            if (DEBUG) printf("%d ", matrix[i][j]);
+            fscanf(input_file, "%d", &matrix[i * matrix_size + j]);
+            if (DEBUG) printf("%d ", matrix[i * matrix_size + j]);
         }
         if (DEBUG) printf("\n");
     }
@@ -201,14 +200,6 @@ void print_vector(const int *vector, long vector_length) {
         printf("%d ", vector[i]);
     }
     printf("\n\n");
-}
-
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length) {
-    for (long i = 0; i < vector_length; i++) {
-        for (long j = 0; j < vector_length; j++) {
-            answer[i] += matrix[j][i] * vector[j];
-        }
-    }
 }
 
 void save_answer(FILE *output_file, const int *answer, long answer_length) {

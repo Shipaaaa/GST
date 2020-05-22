@@ -56,3 +56,10 @@ chmod +x ./run_sequential_execution_on_all_data_samples.sh
 chmod +x ./run_openmp_execution_on_all_data_samples.sh
 ./run_openmp_execution_on_all_data_samples.sh
 ```
+
+### Запуск ускоренной программы с помощью OpenMPI для всех наборов данных:
+
+```shell script
+chmod +x ./run_openmpi_execution_on_all_data_samples.sh
+./run_openmpi_execution_on_all_data_samples.sh
+```
