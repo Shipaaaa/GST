@@ -15,7 +15,6 @@ $PWD/cuda.out ./test_data/1mb ./results/cuda/1mb
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "utils.h"
 #include <cuda.h>
 
 #define DEBUG 0
@@ -27,6 +26,7 @@ void read_vector(FILE *input_file, int *vector, long vector_length);
 
 void print_vector(const int *vector, long vector_length);
 
+__global__
 void calc_answer(int **matrix, const int *vector, int *answer, long vector_length);
 
 void save_answer(FILE *output_file, const int *answer, long answer_length);
@@ -49,7 +49,7 @@ int main(int argc, char *argv[], char *argp[]) {
     FILE *input_file = NULL;
     input_file = fopen(input_file_name, "r+");
     if (input_file == NULL) {
-        showError("input file not found!");
+        printf("input file not found!");
         return -1;
     }
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[], char *argp[]) {
     cudaMemcpy(dev_vector, vector, sizeof(int) * vector_length, cudaMemcpyHostToDevice);
 
     clock_t begin = clock();
-    С
+    calc_answer<<<matrix_size / 256 + 1, 256 >>>(dev_matrix, dev_vector, dev_answer, vector_length);
     clock_t end = clock();
 
     double time_spent_in_sec = (double) (end - begin) / CLOCKS_PER_SEC;
@@ -93,7 +93,7 @@ int main(int argc, char *argv[], char *argp[]) {
     output_file = fopen(output_file_name, "w+");
 
     if (output_file == NULL) {
-        showError("output file not found!");
+        printf("output file not found!");
         return -1;
     }
 
