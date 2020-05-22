@@ -33,3 +33,33 @@
 5) docker-compose.yml, Docker файлы и команды для сборки и запуска MPI-кластера из 3 контейнеров (head – компилирует и запускает программу на контейнерах node1 и node2) для варианта исполнения 4.
 
 *написание программы в варианте TCP дает +20% по сравнению с реализацией через файлы.
+
+## Тестирование программы
+
+### Запуск генератора для всех наборов данных:
+
+```shell script
+chmod +x ./generate_all_data_samples.sh
+./generate_all_data_samples.sh
+```
+
+### Запуск последовательного вычисления для всех наборов данных:
+
+```shell script
+chmod +x ./run_sequential_execution_on_all_data_samples.sh
+./run_sequential_execution_on_all_data_samples.sh
+```
+
+### Запуск ускоренной программы с помощью OpenMP для всех наборов данных:
+
+```shell script
+chmod +x ./run_openmp_execution_on_all_data_samples.sh
+./run_openmp_execution_on_all_data_samples.sh
+```
+
+### Запуск ускоренной программы с помощью OpenMPI для всех наборов данных:
+
+```shell script
+chmod +x ./run_openmpi_execution_on_all_data_samples.sh
+./run_openmpi_execution_on_all_data_samples.sh
+```

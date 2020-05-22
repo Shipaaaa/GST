@@ -1,5 +1,5 @@
 /* 
- * Ускорение программы с помощью OpenMP
+ * Последовательная реализация.
  * Вариант: 7
  * Бизнес логика: Умножение матрицы на вектор
  * 
@@ -8,33 +8,32 @@
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
  *
- * Запуск: g++-9 -fopenmp openmp.c utils.c -o openmp.out && \
-$PWD/openmp.out ./test_data/1mb ./results/openmp/1mb
+ * Запуск: gcc sequential_execution_cp.c utils.c -o sequential_execution_cp.out && \
+$PWD/sequential_execution_cp.out ./test_data/1mb ./results/sequential_execution_cp/1mb
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include "utils.h"
-#include "/usr/local/Cellar/gcc/9.3.0_1/lib/gcc/9/gcc/x86_64-apple-darwin18/9.3.0/include/omp.h"
 
 #define DEBUG 0
 #define LOG 1
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size);
+void read_matrix(FILE *input_file, int *matrix, long matrix_size);
 
 void read_vector(FILE *input_file, int *vector, long vector_length);
 
 void print_vector(const int *vector, long vector_length);
 
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length);
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length);
 
 void save_answer(FILE *output_file, const int *answer, long answer_length);
 
 int main(int argc, char *argv[], char *argp[]) {
 
-    const char *input_file_name;
-    const char *output_file_name;
+    char *input_file_name;
+    char *output_file_name;
 
     if (argc < 3) {
         input_file_name = "input_file";
@@ -57,8 +56,7 @@ int main(int argc, char *argv[], char *argp[]) {
     fscanf(input_file, "%ld", &matrix_size);
     if (LOG) printf("matrix_size: %ld \n", matrix_size);
 
-    int **matrix = (int **) calloc(matrix_size, sizeof(int *));
-    for (long i = 0; i < matrix_size; i++) matrix[i] = (int *) calloc(matrix_size, sizeof(int));
+    int *matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int *));
     read_matrix(input_file, matrix, matrix_size);
 
     long vector_length = matrix_size;
@@ -66,11 +64,11 @@ int main(int argc, char *argv[], char *argp[]) {
     read_vector(input_file, vector, vector_length);
 
     int *answer = (int *) calloc(vector_length, sizeof(int));
-    double begin = omp_get_wtime();
+    clock_t begin = clock();
     calc_answer(matrix, vector, answer, vector_length);
-    double end = omp_get_wtime();
+    clock_t end = clock();
 
-    double time_spent_in_sec = end - begin;
+    double time_spent_in_sec = (double) (end - begin) / CLOCKS_PER_SEC;
 
     FILE *output_file = NULL;
     output_file = fopen(output_file_name, "w+");
@@ -97,7 +95,6 @@ int main(int argc, char *argv[], char *argp[]) {
     fclose(input_file);
     fclose(output_file);
 
-    for (int i = 0; i < matrix_size; i++) free(matrix[i]);
     free(matrix);
     free(vector);
     free(answer);
@@ -105,12 +102,12 @@ int main(int argc, char *argv[], char *argp[]) {
     return 0;
 }
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
+void read_matrix(FILE *input_file, int *matrix, long matrix_size) {
     if (DEBUG) printf("read_matrix:\n");
     for (long i = 0; i < matrix_size; i++) {
         for (long j = 0; j < matrix_size; j++) {
-            fscanf(input_file, "%d", &matrix[i][j]);
-            if (DEBUG) printf("%d ", matrix[i][j]);
+            fscanf(input_file, "%d", &matrix[i * matrix_size + j]);
+            if (DEBUG) printf("%d ", matrix[i * matrix_size + j]);
         }
         if (DEBUG) printf("\n");
     }
@@ -127,32 +124,18 @@ void read_vector(FILE *input_file, int *vector, long vector_length) {
 }
 
 void print_vector(const int *vector, long vector_length) {
-    if (DEBUG) printf("read_vector:\n");
+    printf("read_vector:\n");
     for (long i = 0; i < vector_length; i++) {
         printf("%d ", vector[i]);
     }
     printf("\n\n");
 }
 
-void calc_answer(int **matrix, const int *vector, int *answer, const long vector_length) {
-#pragma omp parallel num_threads(8) shared(matrix, vector)
-    {
-        long i, j;
-        int *answer_private = (int *) calloc(vector_length, sizeof(int));
-
-        for (i = 0; i < vector_length; i++) {
-#pragma omp for
-            for (j = 0; j < vector_length; j++) {
-                answer_private[i] += matrix[j][i] * vector[j];
-            }
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length) {
+    for (long i = 0; i < vector_length; i++) {
+        for (long j = 0; j < vector_length; j++) {
+            answer[i] += matrix[j * vector_length + i] * vector[j];
         }
-#pragma omp critical
-        {
-            for (i = 0; i < vector_length; i++) {
-                answer[i] += answer_private[i];
-            }
-        }
-        free(answer_private);
     }
 }
 

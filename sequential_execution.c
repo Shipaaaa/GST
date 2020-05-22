@@ -8,7 +8,8 @@
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
  *
- * Запуск: crun ./generator 5 input_data && crun ./sequential_execution input_data result
+ * Запуск: gcc sequential_execution.c utils.c -o sequential_execution.out && \
+$PWD/sequential_execution.out ./test_data/1mb ./results/sequential_execution/1mb
  */
 
 #include <stdio.h>
@@ -42,7 +43,7 @@ int main(int argc, char *argv[], char *argp[]) {
         output_file_name = argv[2];
     }
 
-    if (LOG) printf("input file name: %s, output file name: %s.\n", input_file_name, output_file_name);
+    if (LOG) printf("input file name: %s,\noutput file name: %s.\n\n", input_file_name, output_file_name);
 
     FILE *input_file = NULL;
     input_file = fopen(input_file_name, "r+");
@@ -104,6 +105,7 @@ int main(int argc, char *argv[], char *argp[]) {
 }
 
 void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
+    if (DEBUG) printf("read_matrix:\n");
     for (long i = 0; i < matrix_size; i++) {
         for (long j = 0; j < matrix_size; j++) {
             fscanf(input_file, "%d", &matrix[i][j]);
@@ -111,6 +113,8 @@ void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
         }
         if (DEBUG) printf("\n");
     }
+
+    if (DEBUG) printf("\n");
 }
 
 void read_vector(FILE *input_file, int *vector, long vector_length) {
@@ -122,21 +126,23 @@ void read_vector(FILE *input_file, int *vector, long vector_length) {
 }
 
 void print_vector(const int *vector, long vector_length) {
+    printf("read_vector:\n");
     for (long i = 0; i < vector_length; i++) {
         printf("%d ", vector[i]);
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 void calc_answer(int **matrix, const int *vector, int *answer, long vector_length) {
     for (long i = 0; i < vector_length; i++) {
         for (long j = 0; j < vector_length; j++) {
-            answer[j] += matrix[j][i] * vector[i];
+            answer[i] += matrix[j][i] * vector[j];
         }
     }
 }
 
 void save_answer(FILE *output_file, const int *answer, long answer_length) {
+    if (DEBUG) printf("save_answer:\n");
     fprintf(output_file, "result:\n");
 
     for (long i = 0; i < answer_length; i++) {
@@ -144,6 +150,5 @@ void save_answer(FILE *output_file, const int *answer, long answer_length) {
         if (DEBUG) printf("%d ", answer[i]);
     }
     fprintf(output_file, "\n");
-    if (DEBUG) printf("\n");
+    if (DEBUG) printf("\n\n");
 }
-
