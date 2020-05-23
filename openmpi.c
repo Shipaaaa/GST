@@ -39,9 +39,9 @@ int main(int argc, char *argv[], char *argp[]) {
     int matrix_part_size;
 
     int *matrix;
+    int *matrix_buffer;
     int *vector;
     int *answer;
-    int *matrix_buffer;
 
     char *input_file_name;
     char *output_file_name;
@@ -85,33 +85,28 @@ int main(int argc, char *argv[], char *argp[]) {
         if (LOG) printf("matrix_part_size: %d \n", matrix_part_size);
     }
 
-    printf("Before MPI_Bcast size. Procc: %d of %d\n", current_proc, mpi_procs_count);
+    if (DEBUG) printf("Before MPI_Bcast size. Processor: %d of %d\n", current_proc, mpi_procs_count);
     MPI_Bcast(&matrix_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&vector_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&matrix_part_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    printf("Before calloc matrix. Procc: %d of %d\n", current_proc, mpi_procs_count);
     matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int));
-    printf("Before calloc vector. Procc: %d of %d\n", current_proc, mpi_procs_count);
+    matrix_buffer = (int *) calloc(matrix_size * matrix_size, sizeof(int));
     vector = (int *) calloc(vector_length, sizeof(int));
-    printf("Before calloc answer. Procc: %d of %d\n", current_proc, mpi_procs_count);
     answer = (int *) calloc(vector_length, sizeof(int));
 
-    printf("Before calloc matrix_buffer. Procc: %d of %d\n", current_proc, mpi_procs_count);
-    matrix_buffer = (int *) calloc(matrix_size * matrix_size, sizeof(int));
-
     if (current_proc == MASTER_PROC) {
-        printf("read_matrix. Procc: %d of %d\n", current_proc, mpi_procs_count);
+        if (DEBUG) printf("read_matrix. Processor: %d of %d\n", current_proc, mpi_procs_count);
         read_matrix(input_file, matrix, matrix_size);
         read_vector(input_file, vector, vector_length);
         begin = MPI_Wtime();
     }
 
-    printf("before MPI_Bcast vector. Procc: %d of %d\n", current_proc, mpi_procs_count);
+    if (DEBUG) printf("Before MPI_Bcast vector. Processor: %d of %d\n", current_proc, mpi_procs_count);
     MPI_Bcast(vector, vector_length, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(answer, vector_length, MPI_INT, 0, MPI_COMM_WORLD);
 
-    printf("before MPI_Scatter. Procc: %d of %d\n", current_proc, mpi_procs_count);
+    if (DEBUG) printf("Before MPI_Scatter. Processor: %d of %d\n", current_proc, mpi_procs_count);
     if (MPI_Scatter(
             matrix, matrix_part_size, MPI_INT,
             matrix_buffer, matrix_part_size, MPI_INT,
@@ -124,7 +119,7 @@ int main(int argc, char *argv[], char *argp[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    printf("before calc. Procc: %d of %d\n", current_proc, mpi_procs_count);
+    if (DEBUG) printf("Before calc. Processor: %d of %d\n", current_proc, mpi_procs_count);
     int sum = 0;
     for (long i = 0; i < vector_length; i++) {
         for (long j = 0; j < vector_length; j++) {
@@ -136,10 +131,7 @@ int main(int argc, char *argv[], char *argp[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    printf("before free. Procc: %d of %d\n", current_proc, mpi_procs_count);
-    free(matrix_buffer);
-
-    printf("before output. Procc: %d of %d\n", current_proc, mpi_procs_count);
+    if (DEBUG) printf("Before output. Processor: %d of %d\n", current_proc, mpi_procs_count);
     if (current_proc == MASTER_PROC) {
         end = MPI_Wtime();
 
@@ -172,10 +164,11 @@ int main(int argc, char *argv[], char *argp[]) {
     }
 
     free(matrix);
+    free(matrix_buffer);
     free(vector);
     free(answer);
 
-    printf("before MPI_Finalize. Procc: %d of %d\n", current_proc, mpi_procs_count);
+    if (DEBUG) printf("Before MPI_Finalize. Processor: %d of %d\n", current_proc, mpi_procs_count);
     MPI_Finalize();
 
     return 0;
