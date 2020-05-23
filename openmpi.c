@@ -28,6 +28,8 @@ void read_vector(FILE *input_file, int *vector, long vector_length);
 
 void print_vector(const int *vector, long vector_length);
 
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length);
+
 void save_answer(FILE *output_file, const int *answer, long answer_length);
 
 int main(int argc, char *argv[], char *argp[]) {
@@ -117,19 +119,8 @@ int main(int argc, char *argv[], char *argp[]) {
         exit(1);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
     if (DEBUG) printf("Before calc. Processor: %d of %d\n", current_proc, mpi_procs_count);
-    int sum = 0;
-    for (long i = 0; i < vector_length; i++) {
-        for (long j = 0; j < vector_length; j++) {
-            sum += matrix_buffer[j * vector_length + i] * vector[j];
-        }
-        answer[i] = sum;
-        sum = 0;
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
+    calc_answer(matrix_buffer, vector, answer, vector_length);
 
     if (DEBUG) printf("Before output. Processor: %d of %d\n", current_proc, mpi_procs_count);
     if (current_proc == MASTER_PROC) {
@@ -201,6 +192,14 @@ void print_vector(const int *vector, long vector_length) {
         printf("%d ", vector[i]);
     }
     printf("\n\n");
+}
+
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length) {
+    for (long i = 0; i < vector_length; i++) {
+        for (long j = 0; j < vector_length; j++) {
+            answer[i] += matrix[j * vector_length + i] * vector[j];
+        }
+    }
 }
 
 void save_answer(FILE *output_file, const int *answer, long answer_length) {
