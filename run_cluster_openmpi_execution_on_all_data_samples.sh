@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 #1. Прежде всего надо инициализировать переменные, которые разрешают запуск MPI от root:
 #  export OMPI_ALLOW_RUN_AS_ROOT=1
 #  export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
@@ -17,8 +18,8 @@ mkdir -p $test_data_output_path
 results_output_path="results/openmpi"
 mkdir -p $results_output_path
 
-mpicc openmpi.c utils.c -o openmpi.out
+mpicc openmpi.c utils.c -o openmpi.out --std=c11
 
-for i in $(ls -Sr ./$test_data_output_path/); do
-  mpirun -np 8 -H 192.168.12.62:4,192.168.12.63:4 "$PWD"/openmpi.out ./$test_data_output_path/$i ./$results_output_path/$i
+for i in $(ls -Sr ./$test_data_output_path); do
+  mpirun --allow-run-as-root -np 8 -H 192.168.12.62:4,192.168.12.63:4 "$PWD"/openmpi.out ./$test_data_output_path/"$i" ./$results_output_path/"$i"
 done
