@@ -56,7 +56,7 @@ int main(int argc, char *argv[], char *argp[]) {
     fscanf(input_file, "%ld", &matrix_size);
     if (LOG) printf("matrix_size: %ld \n", matrix_size);
 
-    int *matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int *));
+    int *matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int));
     read_matrix(input_file, matrix, matrix_size);
 
     long vector_length = matrix_size;
