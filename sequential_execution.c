@@ -136,7 +136,7 @@ void print_vector(const int *vector, long vector_length) {
 void calc_answer(int **matrix, const int *vector, int *answer, long vector_length) {
     for (long i = 0; i < vector_length; i++) {
         for (long j = 0; j < vector_length; j++) {
-            answer[i] += matrix[j][i] * vector[j];
+            answer[i] += matrix[i][j] * vector[j];
         }
     }
 }

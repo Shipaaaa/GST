@@ -143,7 +143,7 @@ void calc_answer(int **matrix, const int *vector, int *answer, const long vector
         for (i = 0; i < vector_length; i++) {
 #pragma omp for
             for (j = 0; j < vector_length; j++) {
-                answer_private[i] += matrix[j][i] * vector[j];
+                answer_private[i] += matrix[i][j] * vector[j];
             }
         }
 #pragma omp critical
