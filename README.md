@@ -59,7 +59,16 @@ chmod +x ./run_openmp_execution_on_all_data_samples.sh
 
 ### Запуск ускоренной программы с помощью OpenMPI для всех наборов данных:
 
+#### На локальной машине:
+
 ```shell script
 chmod +x ./run_openmpi_execution_on_all_data_samples.sh
 ./run_openmpi_execution_on_all_data_samples.sh
+```
+
+#### На кластере:
+
+```shell script
+chmod +x ./run_cluster_openmpi_execution_on_all_data_samples.sh
+./run_cluster_openmpi_execution_on_all_data_samples.sh
 ```
