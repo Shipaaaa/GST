@@ -72,3 +72,10 @@ chmod +x ./run_openmpi_execution_on_all_data_samples.sh
 chmod +x ./run_cluster_openmpi_execution_on_all_data_samples.sh
 ./run_cluster_openmpi_execution_on_all_data_samples.sh
 ```
+
+### Запуск ускоренной программы с помощью CUDA для всех наборов данных:
+
+```shell script
+chmod +x ./run_cuda_execution_on_all_data_samples.sh
+./run_cuda_execution_on_all_data_samples.sh
+```

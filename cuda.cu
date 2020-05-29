@@ -8,26 +8,25 @@
  * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
  * и размере обработанных данных.
  *
- * Запуск: nvcc cuda.cu utils.c -o cuda.out && \
+ * Запуск: nvcc cuda.cu -o cuda.out && \
 $PWD/cuda.out ./test_data/1mb ./results/cuda/1mb
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <cuda.h>
 
 #define DEBUG 0
 #define LOG 1
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size);
+void read_matrix(FILE *input_file, int *matrix, long matrix_size);
 
 void read_vector(FILE *input_file, int *vector, long vector_length);
 
 void print_vector(const int *vector, long vector_length);
 
 __global__
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length);
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length);
 
 void save_answer(FILE *output_file, const int *answer, long answer_length);
 
@@ -57,8 +56,7 @@ int main(int argc, char *argv[], char *argp[]) {
     fscanf(input_file, "%ld", &matrix_size);
     if (LOG) printf("matrix_size: %ld \n", matrix_size);
 
-    int **matrix = (int **) calloc(matrix_size, sizeof(int *));
-    for (long i = 0; i < matrix_size; i++) matrix[i] = (int *) calloc(matrix_size, sizeof(int));
+    int *matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int));
     read_matrix(input_file, matrix, matrix_size);
 
     long vector_length = matrix_size;
@@ -67,23 +65,38 @@ int main(int argc, char *argv[], char *argp[]) {
 
     int *answer = (int *) calloc(vector_length, sizeof(int));
 
-    int **dev_matrix;
-    int *dev_vector, *dev_answer;
+    int *dev_matrix, *dev_vector, *dev_answer;
 
-    cudaMalloc((void **) &dev_matrix, sizeof(int) * matrix_size * matrix_size);
-    cudaMalloc((void **) &dev_vector, sizeof(int) * vector_length);
-    cudaMalloc((void **) &dev_answer, sizeof(int) * vector_length);
+    int deviceId;
+    int numberOfSMs;
 
-    cudaMemcpy(dev_matrix, matrix, sizeof(int) * matrix_size * matrix_size, cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_vector, vector, sizeof(int) * vector_length, cudaMemcpyHostToDevice);
+    cudaGetDevice(&deviceId);
+    cudaDeviceGetAttribute(&numberOfSMs, cudaDevAttrMultiProcessorCount, deviceId);
 
-    clock_t begin = clock();
-    calc_answer<<<matrix_size / 256 + 1, 256 >>>(dev_matrix, dev_vector, dev_answer, vector_length);
-    clock_t end = clock();
+    cudaMalloc(&dev_matrix, matrix_size * matrix_size * sizeof(int));
+    cudaMalloc(&dev_vector, vector_length * sizeof(int));
+    cudaMalloc(&dev_answer, vector_length * sizeof(int));
 
-    double time_spent_in_sec = (double) (end - begin) / CLOCKS_PER_SEC;
+    cudaMemcpy(dev_matrix, matrix, matrix_size * matrix_size * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_vector, vector, vector_length * sizeof(int), cudaMemcpyHostToDevice);
 
-    cudaMemcpy(answer, dev_answer, sizeof(int) * vector_length, cudaMemcpyDeviceToHost);
+    cudaEvent_t begin, end;
+    float time_spent_in_sec;
+    cudaEventCreate(&begin);
+    cudaEventCreate(&end);
+
+    int number_of_blocks = numberOfSMs * 32;
+    int threads_per_block = 256;
+
+    cudaEventRecord(begin, 0);
+    calc_answer<<<number_of_blocks, threads_per_block>>>(dev_matrix, dev_vector, dev_answer, vector_length);
+    cudaEventRecord(end, 0);
+    cudaEventSynchronize(end);
+
+    cudaEventElapsedTime(&time_spent_in_sec, begin, end);
+    time_spent_in_sec /= 1000;
+
+    cudaMemcpy(answer, dev_answer, vector_length * sizeof(int), cudaMemcpyDeviceToHost);
 
     cudaFree(dev_matrix);
     cudaFree(dev_vector);
@@ -114,7 +127,6 @@ int main(int argc, char *argv[], char *argp[]) {
     fclose(input_file);
     fclose(output_file);
 
-    for (int i = 0; i < matrix_size; i++) free(matrix[i]);
     free(matrix);
     free(vector);
     free(answer);
@@ -122,12 +134,12 @@ int main(int argc, char *argv[], char *argp[]) {
     return 0;
 }
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
+void read_matrix(FILE *input_file, int *matrix, long matrix_size) {
     if (DEBUG) printf("read_matrix:\n");
     for (long i = 0; i < matrix_size; i++) {
         for (long j = 0; j < matrix_size; j++) {
-            fscanf(input_file, "%d", &matrix[i][j]);
-            if (DEBUG) printf("%d ", matrix[i][j]);
+            fscanf(input_file, "%d", &matrix[i * matrix_size + j]);
+            if (DEBUG) printf("%d ", matrix[i * matrix_size + j]);
         }
         if (DEBUG) printf("\n");
     }
@@ -152,13 +164,13 @@ void print_vector(const int *vector, long vector_length) {
 }
 
 __global__
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length) {
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
 
-    for (int i = tid; i < vector_length; i += stride) {
+    for (long i = tid; i < vector_length; i += stride) {
         for (long j = 0; j < vector_length; j++) {
-            answer[i] += matrix[j][i] * vector[j];
+            answer[i] += matrix[i * vector_length + j] * vector[j];
         }
     }
 }
