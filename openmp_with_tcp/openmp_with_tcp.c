@@ -1,69 +1,72 @@
-/* 
+/*
  * Ускорение программы с помощью OpenMP
  * Вариант: 7
  * Бизнес логика: Умножение матрицы на вектор
- * 
+ *
  * Считывание данных происходит из файла.
  * Программа выполняет бизнес-логику и записывает результат в выходной файл.
- * В конце файла с результатами сохраняется информация о времени выполнения вычислений 
+ * В конце файла с результатами сохраняется информация о времени выполнения вычислений
  * и размере обработанных данных.
  *
- * Запуск: g++-9 -fopenmp openmp.c utils.c -o openmp.out && \
-$PWD/openmp.out ./test_data/1mb ./results/openmp/1mb
+ * Запуск: g++-9 -fopenmp openmp_with_tcp.c utils.c -o openmp_with_tcp.out && \
+$PWD/openmp_with_tcp.out 127.0.0.1 ./results/openmp_with_tcp/1mb
  */
 
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <netdb.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
-#include <time.h>
+#include <unistd.h>
+#include <errno.h>
+#include <arpa/inet.h>
 #include "utils.h"
-#include "/usr/local/Cellar/gcc/9.3.0_1/lib/gcc/9/gcc/x86_64-apple-darwin18/9.3.0/include/omp.h"
+#include "omp.h"
 
+#define PORT 8080
 #define DEBUG 0
 #define LOG 1
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size);
+int create_socket(const char *ip_address);
 
-void read_vector(FILE *input_file, int *vector, long vector_length);
+void print_matrix(const int *matrix, long matrix_size);
 
 void print_vector(const int *vector, long vector_length);
 
-void calc_answer(int **matrix, const int *vector, int *answer, long vector_length);
+void calc_answer(const int *matrix, const int *vector, int *answer, long vector_length);
 
 void save_answer(FILE *output_file, const int *answer, long answer_length);
 
-int main(int argc, char *argv[], char *argp[]) {
-
-    const char *input_file_name;
-    const char *output_file_name;
+int main(int argc, char *argv[]) {
 
     if (argc < 3) {
-        input_file_name = "input_file";
-        output_file_name = "output_file";
-    } else {
-        input_file_name = argv[1];
-        output_file_name = argv[2];
-    }
-
-    if (LOG) printf("input file name: %s,\noutput file name: %s.\n\n", input_file_name, output_file_name);
-
-    FILE *input_file = NULL;
-    input_file = fopen(input_file_name, "r+");
-    if (input_file == NULL) {
-        showError("input file not found!");
+        showError("Вы не ввели ip адрес сервера и названия файла для сохранения результата");
         return -1;
     }
 
+    const char *ip_address = argv[1];
+    const char *output_file_name = argv[2];
+
+    if (LOG) printf("ip_address: %s,\noutput file name: %s.\n\n", ip_address, output_file_name);
+
+    int socket_descriptor = create_socket(ip_address);
+    if (socket_descriptor == -1) return -1;
+
     long matrix_size;
-    fscanf(input_file, "%ld", &matrix_size);
+    printf("sizeof(long): %ld \n", sizeof(long));
+    read(socket_descriptor, &matrix_size, sizeof(long));
     if (LOG) printf("matrix_size: %ld \n", matrix_size);
 
-    int **matrix = (int **) calloc(matrix_size, sizeof(int *));
-    for (long i = 0; i < matrix_size; i++) matrix[i] = (int *) calloc(matrix_size, sizeof(int));
-    read_matrix(input_file, matrix, matrix_size);
+    int *matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int));
+    read(socket_descriptor, matrix, matrix_size * matrix_size * sizeof(int));
+    if (DEBUG) print_matrix(matrix, matrix_size);
 
     long vector_length = matrix_size;
     int *vector = (int *) calloc(vector_length, sizeof(int));
-    read_vector(input_file, vector, vector_length);
+    read(socket_descriptor, vector, vector_length * sizeof(int));
+    if (DEBUG) print_vector(vector, vector_length);
 
     int *answer = (int *) calloc(vector_length, sizeof(int));
     double begin = omp_get_wtime();
@@ -94,36 +97,50 @@ int main(int argc, char *argv[], char *argp[]) {
         printf("size_of_input_data_in_mb: %f\n\n", size_of_input_data_in_mb);
     }
 
-    fclose(input_file);
     fclose(output_file);
+    close(socket_descriptor);
 
-    for (int i = 0; i < matrix_size; i++) free(matrix[i]);
     free(matrix);
     free(vector);
-    free(answer);
 
     return 0;
 }
 
-void read_matrix(FILE *input_file, int **matrix, long matrix_size) {
-    if (DEBUG) printf("read_matrix:\n");
-    for (long i = 0; i < matrix_size; i++) {
-        for (long j = 0; j < matrix_size; j++) {
-            fscanf(input_file, "%d", &matrix[i][j]);
-            if (DEBUG) printf("%d ", matrix[i][j]);
-        }
-        if (DEBUG) printf("\n");
+int create_socket(const char *ip_address) {
+    int socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_descriptor < 0) {
+        showError("Socket creation failed...\n");
+        return -1;
+    } else {
+        if (LOG) printf("Socket successfully created..\n");
     }
 
-    if (DEBUG) printf("\n");
+    struct sockaddr_in server_address;
+    memset(&server_address, '0', sizeof(server_address));
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(PORT);
+
+    if (inet_pton(AF_INET, ip_address, &server_address.sin_addr) <= 0) {
+        showError("inet_pton error occured");
+        return -1;
+    }
+
+    if (connect(socket_descriptor, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+        showError("Connect Failed");
+        return -1;
+    }
+
+    return socket_descriptor;
 }
 
-void read_vector(FILE *input_file, int *vector, long vector_length) {
-    for (long i = 0; i < vector_length; i++) {
-        fscanf(input_file, "%d", &vector[i]);
+void print_matrix(const int *matrix, long matrix_size) {
+    for (long i = 0; i < matrix_size; i++) {
+        for (long j = 0; j < matrix_size; j++) {
+            printf("%d ", matrix[i * matrix_size + j]);
+        }
+        printf("\n");
     }
-
-    if (DEBUG) print_vector(vector, vector_length);
+    printf("\n");
 }
 
 void print_vector(const int *vector, long vector_length) {
@@ -134,16 +151,18 @@ void print_vector(const int *vector, long vector_length) {
     printf("\n\n");
 }
 
-void calc_answer(int **matrix, const int *vector, int *answer, const long vector_length) {
-#pragma omp parallel num_threads(8) shared(matrix, vector)
+void calc_answer(const int *matrix, const int *vector, int *answer, const long vector_length) {
+#pragma omp parallel shared(matrix, vector)
     {
+        if (LOG) printf("omp_get_num_threads: %d.\n\n", omp_get_num_threads());
+
         long i, j;
         int *answer_private = (int *) calloc(vector_length, sizeof(int));
 
         for (i = 0; i < vector_length; i++) {
 #pragma omp for
             for (j = 0; j < vector_length; j++) {
-                answer_private[i] += matrix[i][j] * vector[j];
+                answer_private[i] += matrix[i * vector_length + j] * vector[j];
             }
         }
 #pragma omp critical

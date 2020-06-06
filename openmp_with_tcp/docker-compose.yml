@@ -1,0 +1,14 @@
+version: "3.7"
+
+services:
+  opm:
+    build: .
+    environment:
+      - OMP_NUM_THREADS=8
+    ports:
+      - "8080:8080"
+    network_mode: "host"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
