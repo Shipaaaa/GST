@@ -24,12 +24,15 @@ $PWD/openmp_with_tcp.out 127.0.0.1 ./results/openmp_with_tcp/1mb
 #include <arpa/inet.h>
 #include "utils.h"
 #include "omp.h"
+#include "../../../../../../../usr/local/Cellar/gcc/9.3.0_1/lib/gcc/9/gcc/x86_64-apple-darwin18/9.3.0/include/omp.h"
 
 #define PORT 8080
 #define DEBUG 0
 #define LOG 1
 
 int create_socket(const char *ip_address);
+
+int *receive_from_server(int descriptor, size_t array_size, int buffer_size);
 
 void print_matrix(const int *matrix, long matrix_size);
 
@@ -55,17 +58,15 @@ int main(int argc, char *argv[]) {
     if (socket_descriptor == -1) return -1;
 
     long matrix_size;
-    printf("sizeof(long): %ld \n", sizeof(long));
     read(socket_descriptor, &matrix_size, sizeof(long));
     if (LOG) printf("matrix_size: %ld \n", matrix_size);
 
-    int *matrix = (int *) calloc(matrix_size * matrix_size, sizeof(int));
-    read(socket_descriptor, matrix, matrix_size * matrix_size * sizeof(int));
+    int *matrix = receive_from_server(socket_descriptor, matrix_size * matrix_size, 255);
     if (DEBUG) print_matrix(matrix, matrix_size);
 
     long vector_length = matrix_size;
-    int *vector = (int *) calloc(vector_length, sizeof(int));
-    read(socket_descriptor, vector, vector_length * sizeof(int));
+    int *vector = receive_from_server(socket_descriptor, vector_length, 255);
+
     if (DEBUG) print_vector(vector, vector_length);
 
     int *answer = (int *) calloc(vector_length, sizeof(int));
@@ -131,6 +132,26 @@ int create_socket(const char *ip_address) {
     }
 
     return socket_descriptor;
+}
+
+int *receive_from_server(int descriptor, size_t array_size, int buffer_size) {
+    int *array = (int *) calloc(array_size, sizeof(int));
+
+    int received_size = 0, rt = 0;
+
+    for (int i = 0; i < array_size; i += buffer_size) {
+        while (buffer_size - received_size) {
+            rt = read(descriptor, array + i + received_size, buffer_size - received_size);
+            if (rt == -1) {
+                printf("an error occurs\n");
+                return NULL;
+            }
+            if (!rt) return array;
+            received_size += rt;
+        }
+        received_size = 0;
+    }
+    return array;
 }
 
 void print_matrix(const int *matrix, long matrix_size) {

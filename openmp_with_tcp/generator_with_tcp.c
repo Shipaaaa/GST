@@ -33,6 +33,8 @@ void generate_vector(int *vector, long matrix_size);
 
 void send_data(long matrix_size, const int *matrix, long vector_length, const int *vector);
 
+int write_to_client(int descriptor, const int *array, size_t array_size, int buffer_size);
+
 /**
  * gcc tcp_server.c -o tcp_server.out && ./tcp_server.out
  */
@@ -113,17 +115,24 @@ void send_data(long matrix_size, const int *matrix, long vector_length, const in
             if (LOG) printf("Server accept the client...\n");
         }
 
-        printf("sizeof(long): %ld \n", sizeof(long));
         write(client_connect_descriptor, &matrix_size, sizeof(long));
-        if (LOG) printf("write matrix_size\n");
-        write(client_connect_descriptor, matrix, matrix_size * matrix_size * sizeof(int));
-        if (LOG) printf("write matrix\n");
-        write(client_connect_descriptor, vector, vector_length * sizeof(int));
-        if (LOG) printf("write vector\n");
+        write_to_client(client_connect_descriptor, matrix, matrix_size * matrix_size, 255);
+        write_to_client(client_connect_descriptor, vector, vector_length, 255);
 
         close(client_connect_descriptor);
         sleep(1);
     }
+}
+
+int write_to_client(int descriptor, const int *array, size_t array_size, int buffer_size) {
+    int i = 0, sent_size = 0;
+    for (i = 0; i < array_size; i += buffer_size) {
+        while (buffer_size - sent_size) {
+            sent_size += write(descriptor, array + i + sent_size, buffer_size - sent_size);
+        }
+        sent_size = 0;
+    }
+    return i;
 }
 
 void generate_matrix(int *matrix, const long matrix_size) {
