@@ -4,10 +4,9 @@ services:
   opm:
     build: .
     environment:
-      - OMP_NUM_THREADS=8
+      - OMP_NUM_THREADS=1
     ports:
       - "8080:8080"
-    network_mode: "host"
     deploy:
       resources:
         limits:

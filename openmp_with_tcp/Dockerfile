@@ -13,4 +13,4 @@ ADD ./utils.c  /openmp_with_tcp
 RUN mkdir -p /openmp_with_tcp/results/openmp_with_tcp
 
 RUN gcc -fopenmp openmp_with_tcp.c utils.c -o openmp_with_tcp.out
-CMD $PWD/openmp_with_tcp.out 192.168.65.2 ./results/openmp_with_tcp/500mb
+CMD $PWD/openmp_with_tcp.out $(getent hosts host.docker.internal | awk '{ print $1 }') ./results/openmp_with_tcp/500mb
