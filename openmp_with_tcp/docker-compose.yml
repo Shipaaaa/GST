@@ -1,0 +1,11 @@
+version: "2.2"
+
+services:
+  opm:
+    build: .
+    environment:
+      - OMP_NUM_THREADS=8
+    ports:
+      - "8080:8080"
+    cpu_percent: 50
+    cpu_count: 4
